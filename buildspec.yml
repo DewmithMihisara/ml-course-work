@@ -1,0 +1,22 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 445567103374.dkr.ecr.eu-north-1.amazonaws.com
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+  build:
+    commands:
+      - echo Building Docker image...
+      - docker build -t coursework/ml:$IMAGE_TAG .
+      - docker tag coursework/ml:$IMAGE_TAG 445567103374.dkr.ecr.eu-north-1.amazonaws.com/coursework/ml:$IMAGE_TAG
+  post_build:
+    commands:
+      - echo Pushing Docker image to ECR...
+      - docker push 445567103374.dkr.ecr.eu-north-1.amazonaws.com/coursework/ml:$IMAGE_TAG
+      - echo Writing image definition file...
+      - printf '[{"name":"coursework/ml","imageUri":"445567103374.dkr.ecr.eu-north-1.amazonaws.com/coursework/ml:%s"}]' $IMAGE_TAG > imagedefinitions.json
+artifacts:
+  files:
+    - imagedefinitions.json
